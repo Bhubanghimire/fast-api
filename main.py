@@ -1,6 +1,6 @@
 
 from fastapi import FastAPI, Query
-from models import Item
+from models import Item, FilterParams
 from typing import Annotated
 
 app = FastAPI()
@@ -49,5 +49,10 @@ title="Query string",
     item_dict = item.dict()
     item_dict.update({"item_id":item_id})
     return item_dict
+
+
+@app.get('/filter/')
+async def filteritem(item:Annotated[FilterParams, Query()]):
+    return item
 
 # /Users/m1user/PycharmProjects/fastapi/.venv/bin/python -m uvicorn main:app --reload
