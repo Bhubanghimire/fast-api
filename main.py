@@ -20,22 +20,34 @@ async def item_detail(item_id: float):
 async def item_detail(item_id: int = 2, q: str | None = None):
     """
     item_id will work as query param
+    :param q:
     :param item_id: str
     :return: json
     """
-    return {"item": item_id}
+    response = {"item": item_id}
+    if q:
+        response.update({"q":q})
+
+    return response
 
 
 @app.post('/item/')
 async def create(item: Item):
-    return item
+    item_dict = item.dict()
+    if item.tax:
+        item_dict.update({"price_with_tax":item.tax+item.price})
+    return item_dict
 
 
 @app.post('/create/{item_id}/')
-async def create_view(item_id: int, item: Item, q:Annotated[str|None, Query(max_length=5)]=None):
-    print(f"item id: {item_id}, item data: {item.dict()}, query data:{q}")
+async def create_view(item_id: int, item: Item, q:Annotated[str|None, Query(
+title="Query string",
+                                            description="Query string for the items to search in the database that have a good match",
+                                            min_length=5)]=None):
     if q:
         item.name=q
-    return item
+    item_dict = item.dict()
+    item_dict.update({"item_id":item_id})
+    return item_dict
 
 # /Users/m1user/PycharmProjects/fastapi/.venv/bin/python -m uvicorn main:app --reload
