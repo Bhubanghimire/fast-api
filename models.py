@@ -2,6 +2,12 @@ from pydantic import BaseModel, Field
 from typing import Literal
 
 
+class User(BaseModel):
+    username: str
+    first_name: str
+    last_name: str |None=None
+
+
 class Item(BaseModel):
     name: str
     description: str | None = None
