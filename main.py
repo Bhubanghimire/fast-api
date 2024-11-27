@@ -10,8 +10,14 @@ async def root():
     return {"message": "Hello world"}
 
 
-@app.get('/{item_id}')
-async def item_detail(item_id: float):
+@app.get('/items/{item_id}')
+async def item_detail(item_id: int):  # default:async def item_detail(item_id):
+    return {"item": item_id}
+
+
+@app.get('/items/{item_id}')
+async def item_detail(item_id: int):  # default:async def item_detail(item_id):
+    """this code will not execute as the path matches with above function."""
     return {"item": item_id}
 
 
@@ -39,14 +45,14 @@ async def create(item: Item):
 
 
 @app.post('/create/{item_id}/')
-async def create_view(item_id: int, item: Item,user:User, q: Annotated[str | None, Query(
+async def create_view(item_id: int, item: Item, user: User, q: Annotated[str | None, Query(
     title="Query string",
     description="Query string for the items to search in the database that have a good match",
     min_length=5)] = None):
     if q:
         item.name = q
     item_dict = item.dict()
-    item_dict.update({"item_id": item_id, "user":user})
+    item_dict.update({"item_id": item_id, "user": user})
     return item_dict
 
 
