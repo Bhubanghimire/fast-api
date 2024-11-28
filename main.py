@@ -1,6 +1,14 @@
 from fastapi import FastAPI, Query
 from models import Item, FilterParams, User
+from enum import Enum
 from typing import Annotated
+
+
+class ModelName(str, Enum):
+    alexnet = "alexnet"
+    resnet18 = "resnet18"
+    lenet = "lenet"
+
 
 app = FastAPI()
 
@@ -19,6 +27,25 @@ async def item_detail(item_id: int):  # default:async def item_detail(item_id):
 async def item_detail(item_id: int):  # default:async def item_detail(item_id):
     """this code will not execute as the path matches with above function."""
     return {"item": item_id}
+
+
+@app.get("/models/{model_name}")
+async def model_detail(model_name: ModelName):
+    if model_name == ModelName.alexnet:
+        return {"model": "alexnet", "mesage": "AlexNet model"}
+
+    if model_name is ModelName.alexnet:
+        return {"model_name": model_name, "message": "Deep Learning FTW!"}
+
+    if model_name.value == "lenet":
+        return {"model_name": model_name, "message": "LeCNN all the images"}
+
+    return {"model": model_name}
+
+
+@app.get("/files/{file_path:path}")
+async def read_file(file_path: str):
+    return {"file_path": file_path}
 
 
 @app.get('/check/')
