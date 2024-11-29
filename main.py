@@ -23,10 +23,13 @@ async def item_detail(item_id: int):  # default:async def item_detail(item_id):
     return {"item": item_id}
 
 
-@app.get('/items/{item_id}')
-async def item_detail(item_id: int):  # default:async def item_detail(item_id):
+@app.get('/users/{user_id}/items/{item_id}')
+async def item_detail(user_id: int, item_id: int, needy:str, query: str | None = None):  # default:async def item_detail(item_id):
     """this code will not execute as the path matches with above function."""
-    return {"item": item_id}
+    if query is None:
+        return {"item": item_id, "user": user_id}
+    else:
+        return {"item": item_id, "user": user_id, "query": query}
 
 
 @app.get("/models/{model_name}")
@@ -48,10 +51,27 @@ async def read_file(file_path: str):
     return {"file_path": file_path}
 
 
+fake_item_db = [
+    {"item_name": "apple"},
+    {"item_name": "banana"},
+    {"item_name": "baz"},
+]
+
+
+@app.get('/items/')
+async def read_item(skip: int = 0, limit: int = 10, q: str | None = None, short: bool = False):
+    print(short)
+    if q is None:
+        return fake_item_db[skip:skip + limit]
+    else:
+        print(f"q value is {q}")
+        return fake_item_db[skip:skip + limit]
+
+
 @app.get('/check/')
 async def item_detail(item_id: int = 2, q: str | None = None):
     """
-    item_id will work as query param
+    item_id,q will work as query param
     :param q:
     :param item_id: str
     :return: json
