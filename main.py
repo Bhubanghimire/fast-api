@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Path, Body
 from models import Item, FilterParams, User
 from enum import Enum
 from typing import Annotated
@@ -106,5 +106,25 @@ async def create_view(item_id: int, item: Item, user: User, q: Annotated[str | N
 @app.get('/filter/')
 async def filteritem(item: Annotated[FilterParams, Query()]):
     return item
+
+
+@app.put('/items/{item_id}')
+async def update(
+                user:User,
+                item_id: Annotated[int, Path(title="The ID of the item to get", ge=0, le=1000)],
+                body:Annotated[str | None, Body()],
+                item: Annotated[Item | None, Body()],
+                q: str | None = None,
+                 ):
+    results = {"item_id": item_id, "user": user}
+    if item:
+        results.update({"item": item})
+
+    if q:
+        results.update({"q": q})
+    if body:
+        results.update({"body": body})
+
+    return results
 
 # /Users/m1user/PycharmProjects/fastapi/.venv/bin/python -m uvicorn main:app --reload
