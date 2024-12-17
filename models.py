@@ -37,6 +37,33 @@ class FilterParams(BaseModel):
 
 class Offer(BaseModel):
     name: str = Field()
-    description: str = Field()
-    price: float = Field()
+    description: str = Field(examples=['Offer example'])
+    price: float = Field(examples=[22.22])
     items: list[Item] = Field(default_factory=list)
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                  {
+                    "name": "dashain offer",
+                    "description": "5% discount on any items",
+                    "price": 0,
+                    "items": [
+                      {
+                        "name": "test",
+                        "description": "ok",
+                        "price": 1,
+                        "tax": 0,
+                        "tags": [
+                          "string"
+                        ],
+                        "added_by": {
+                          "username": "bhuban",
+                          "first_name": "bhuban",
+                          "last_name": "ghimire"
+                        }
+                      }
+                    ]
+                  }
+                ]
+        }
+    }

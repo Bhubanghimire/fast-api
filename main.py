@@ -178,10 +178,10 @@ async def create_offer(offers:list[Offer]):
     offers_dicts = [offer.dict() for offer in offers]
 
     # Insert into MongoDB
-    result =  db.offers.insert_many(offers_dicts)
+    result = db.offers.insert_many(offers_dicts)
 
     # Retrieve the inserted documents from MongoDB
-    inserted_offers =  db.offers.find({"_id": {"$in": result.inserted_ids}}).to_list(length=None)
+    inserted_offers = db.offers.find({"_id": {"$in": result.inserted_ids}}).to_list(length=None)
 
     # Serialize each document by converting ObjectId to string
     response = [serialize_document(offer) for offer in inserted_offers]
