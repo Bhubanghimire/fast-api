@@ -9,9 +9,19 @@ class User(BaseModel):
 
 
 class Item(BaseModel):
-    name: str
-    description: str | None = None
-    price: float
+    name: str = Field(
+        title="Name of the item",
+        max_length=100
+    )
+    description: str | None = Field(
+        title="Description of the item",
+        default=None,
+        max_length=1000
+    )
+    price: float = Field(
+        description="Price of the item must be greater than 0.",
+        gt=0
+    )
     tax: int
 
 
