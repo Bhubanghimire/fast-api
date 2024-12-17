@@ -2,6 +2,7 @@ annotated-types==0.7.0
 anyio==4.4.0
 certifi==2024.8.30
 click==8.1.7
+cramjam==2.9.1
 dnspython==2.6.1
 email_validator==2.2.0
 exceptiongroup==1.2.2
@@ -19,8 +20,11 @@ mdurl==0.1.2
 pydantic==2.9.2
 pydantic_core==2.23.4
 Pygments==2.18.0
+pykerberos==1.2.4
+pymongo==4.10.1
 python-dotenv==1.0.1
 python-multipart==0.0.9
+python-snappy==0.7.3
 PyYAML==6.0.2
 rich==13.8.1
 shellingham==1.5.4

@@ -2,6 +2,17 @@ from fastapi import FastAPI, Query, Path, Body
 from models import Item, FilterParams, User
 from enum import Enum
 from typing import Annotated
+from dotenv import load_dotenv
+from pymongo import MongoClient
+import os
+
+# Load environment variables
+load_dotenv()
+MONGO_URL = os.getenv("MONGO_URL")
+DATABASE_NAME = os.getenv("DATABASE_NAME")
+
+client = MongoClient(MONGO_URL)
+db = client[DATABASE_NAME]
 
 
 class ModelName(str, Enum):
@@ -88,6 +99,8 @@ async def create(item: Item):
     item_dict = item.dict()
     if item.tax:
         item_dict.update({"price_with_tax": item.tax + item.price})
+    results = db.items.insert_one(item_dict)
+    item_dict["_id"] = str(results.inserted_id)
     return item_dict
 
 
