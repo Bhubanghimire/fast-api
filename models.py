@@ -5,7 +5,7 @@ from typing import Literal
 class User(BaseModel):
     username: str
     first_name: str
-    last_name: str |None=None
+    last_name: str | None = None
 
 
 class Item(BaseModel):
@@ -22,13 +22,21 @@ class Item(BaseModel):
         description="Price of the item must be greater than 0.",
         gt=0
     )
-    tax: int
+    tax: float | None = None
+    tags: list[str] = Field(default_factory=list)
+    added_by: User | None = None
 
 
 class FilterParams(BaseModel):
-    model_config = {"extra":"forbid"}  # blocks extra data in query params
+    model_config = {"extra": "forbid"}  # blocks extra data in query params
     limit: int = Field(100, gt=0, le=100)
     offset: int = Field(0, ge=0)
     order_by: Literal["created_at", "updated_at"] = "created_at"
-    # tags: list['str'] = []
+    tags: list[str] = Field(default_factory=list)
 
+
+class Offer(BaseModel):
+    name: str = Field()
+    description: str = Field()
+    price: float = Field()
+    items: list[Item] = Field(default_factory=list)

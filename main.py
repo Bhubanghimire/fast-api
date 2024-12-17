@@ -1,5 +1,6 @@
+from bson import ObjectId
 from fastapi import FastAPI, Query, Path, Body
-from models import Item, FilterParams, User
+from models import Item, FilterParams, User, Offer
 from enum import Enum
 from typing import Annotated
 from dotenv import load_dotenv
@@ -32,8 +33,15 @@ async def root():
 
 
 @app.get('/items/{item_id}')
-async def item_detail(item_id: int):  # default:async def item_detail(item_id):
-    return {"item": item_id}
+async def item_detail(item_id: str):  # default:async def item_detail(item_id):
+    try:
+        item_id_obj = ObjectId(item_id)
+    except Exception as e:
+        return {"error": f"Invalid item_id format: {e}"}
+
+    obj = db.items.find_one({"_id": item_id_obj})
+    results = serialize_document(obj)
+    return results
 
 
 @app.get('/users/{user_id}/items/{item_id}')
@@ -128,20 +136,58 @@ async def filteritem(item: Annotated[FilterParams, Query()]):
 @app.put('/items/{item_id}')
 async def update(
                 user:User,
-                item_id: Annotated[int, Path(title="The ID of the item to get", ge=0, le=1000)],
+                item_id: Annotated[str, Path(title="The ID of the item to get", max_length=100)],
                 body:Annotated[str | None, Body()],
                 item: Annotated[Item | None, Body()],
                 q: str | None = None,
                  ):
-    results = {"item_id": item_id, "user": user}
+    try:
+        item_id_obj = ObjectId(item_id)
+    except Exception as e:
+        return {"error": f"Invalid item_id format: {e}"}
+
+    obj = db.items.find_one({"_id": item_id_obj})
+    results = serialize_document(obj)
     if item:
-        results.update({"item": item})
+        update_data = {key: value for key, value in item.dict().items() if value is not None}
 
-    if q:
-        results.update({"q": q})
-    if body:
-        results.update({"body": body})
-
+        if update_data:
+            updated_results = db.items.update_one({"_id":item_id_obj},{"$set": update_data})
+            # Fetch the updated document
+            updated_obj = db.items.find_one({"_id": item_id_obj})
+            results = serialize_document(updated_obj)
+    # if q:
+    #     results.update({"q": q})
+    # if body:
+    #     results.update({"body": body})
     return results
+
+@app.get('/users/')
+async def read_users():
+    results = db.users.find()
+    if results:
+        results = serialize_document(results)
+    else:
+        results ={} # serialize_document(results)
+    return results
+
+
+@app.post('/offers/')
+async def create_offer(offers:list[Offer]):
+    # Convert Pydantic models to a list of dictionaries
+    offers_dicts = [offer.dict() for offer in offers]
+
+    # Insert into MongoDB
+    result =  db.offers.insert_many(offers_dicts)
+
+    # Retrieve the inserted documents from MongoDB
+    inserted_offers =  db.offers.find({"_id": {"$in": result.inserted_ids}}).to_list(length=None)
+
+    # Serialize each document by converting ObjectId to string
+    response = [serialize_document(offer) for offer in inserted_offers]
+
+    return response
+
+
 
 # /Users/m1user/PycharmProjects/fastapi/.venv/bin/python -m uvicorn main:app --reload
