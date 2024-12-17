@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 from pymongo import MongoClient
 import os
 
+from serializers import serialize_document
+
 # Load environment variables
 load_dotenv()
 MONGO_URL = os.getenv("MONGO_URL")
@@ -71,12 +73,14 @@ fake_item_db = [
 
 @app.get('/items/')
 async def read_item(skip: int = 0, limit: int = 10, q: str | None = None, short: bool = False):
-    print(short)
-    if q is None:
-        return fake_item_db[skip:skip + limit]
-    else:
-        print(f"q value is {q}")
-        return fake_item_db[skip:skip + limit]
+    # fake_item_db = db.items.find()
+    query = {}
+    if q:
+        query = {"name":{"$regex": q, "$options":"i"}}
+
+    fake_item_db = db.items.find(query)
+    items = [serialize_document(item) for item in fake_item_db]
+    return items
 
 
 @app.get('/check/')
