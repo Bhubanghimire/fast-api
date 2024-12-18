@@ -1,5 +1,5 @@
 from bson import ObjectId
-from fastapi import FastAPI, Query, Path, Body
+from fastapi import FastAPI, Query, Path, Body, HTTPException
 from models import Item, FilterParams, User, Offer
 from enum import Enum
 from typing import Annotated
@@ -27,12 +27,19 @@ class ModelName(str, Enum):
 app = FastAPI()
 
 
-@app.get('/')
-async def root():
-    return {"message": "Hello world"}
+@app.get('/',responses ={
+        200: {"description": "Request was successful", "content": {"application/json": {"example": {"message": "Request was successful"}}}},
+        400: {"description": "Bad Request", "content": {"application/json": {"example": {"message": "There was an error with the request"}}}},
+    })
+async def root(some_condition:bool):
+    if some_condition:
+        return {"message": "Request was successful"}
+    else:
+        raise HTTPException(status_code=400, detail="There was an error with the request")
 
 
-@app.get('/items/{item_id}')
+
+@app.get('/items/{item_id}', status_code=200)
 async def item_detail(item_id: str):  # default:async def item_detail(item_id):
     try:
         item_id_obj = ObjectId(item_id)
