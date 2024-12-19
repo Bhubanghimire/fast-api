@@ -1,5 +1,7 @@
 from bson import ObjectId
-from fastapi import FastAPI, Query, Path, Body, HTTPException
+from fastapi import FastAPI, Query, Path, Body, HTTPException, Form
+
+from form import UserForm
 from models import Item, FilterParams, User, Offer
 from enum import Enum
 from typing import Annotated
@@ -196,5 +198,13 @@ async def create_offer(offers:list[Offer]):
     return response
 
 
+@app.post("/login/")
+async def login(username: Annotated[str,Form()], password: Annotated[str,Form()]):
+    return {"username": username, "password": password}
+
+
+@app.post("/form/login/")
+async def login_form(form: Annotated[UserForm,Form()],):
+    return form
 
 # /Users/m1user/PycharmProjects/fastapi/.venv/bin/python -m uvicorn main:app --reload
