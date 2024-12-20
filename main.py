@@ -1,5 +1,5 @@
 from bson import ObjectId
-from fastapi import FastAPI, Query, Path, Body, HTTPException, Form
+from fastapi import FastAPI, Query, Path, Body, HTTPException, Form, UploadFile
 
 from form import UserForm
 from models import Item, FilterParams, User, Offer
@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from pymongo import MongoClient
 import os
 
-from serializers import serialize_document
+from serializers import serialize_document, serialize_documents
 
 # Load environment variables
 load_dotenv()
@@ -29,16 +29,17 @@ class ModelName(str, Enum):
 app = FastAPI()
 
 
-@app.get('/',responses ={
-        200: {"description": "Request was successful", "content": {"application/json": {"example": {"message": "Request was successful"}}}},
-        400: {"description": "Bad Request", "content": {"application/json": {"example": {"message": "There was an error with the request"}}}},
-    })
-async def root(some_condition:bool):
+@app.get('/', responses={
+    200: {"description": "Request was successful",
+          "content": {"application/json": {"example": {"message": "Request was successful"}}}},
+    400: {"description": "Bad Request",
+          "content": {"application/json": {"example": {"message": "There was an error with the request"}}}},
+})
+async def root(some_condition: bool):
     if some_condition:
         return {"message": "Request was successful"}
     else:
         raise HTTPException(status_code=400, detail="There was an error with the request")
-
 
 
 @app.get('/items/{item_id}', status_code=200)
@@ -54,7 +55,8 @@ async def item_detail(item_id: str):  # default:async def item_detail(item_id):
 
 
 @app.get('/users/{user_id}/items/{item_id}')
-async def item_detail(user_id: int, item_id: int, needy:str, query: str | None = None):  # default:async def item_detail(item_id):
+async def item_detail(user_id: int, item_id: int, needy: str,
+                      query: str | None = None):  # default:async def item_detail(item_id):
     """this code will not execute as the path matches with above function."""
     if query is None:
         return {"item": item_id, "user": user_id}
@@ -93,7 +95,7 @@ async def read_item(skip: int = 0, limit: int = 10, q: str | None = None, short:
     # fake_item_db = db.items.find()
     query = {}
     if q:
-        query = {"name":{"$regex": q, "$options":"i"}}
+        query = {"name": {"$regex": q, "$options": "i"}}
 
     fake_item_db = db.items.find(query)
     items = [serialize_document(item) for item in fake_item_db]
@@ -144,12 +146,12 @@ async def filteritem(item: Annotated[FilterParams, Query()]):
 
 @app.put('/items/{item_id}')
 async def update(
-                user:User,
-                item_id: Annotated[str, Path(title="The ID of the item to get", max_length=100)],
-                body:Annotated[str | None, Body()],
-                item: Annotated[Item | None, Body()],
-                q: str | None = None,
-                 ):
+        user: User,
+        item_id: Annotated[str, Path(title="The ID of the item to get", max_length=100)],
+        body: Annotated[str | None, Body()],
+        item: Annotated[Item | None, Body()],
+        q: str | None = None,
+):
     try:
         item_id_obj = ObjectId(item_id)
     except Exception as e:
@@ -161,7 +163,7 @@ async def update(
         update_data = {key: value for key, value in item.dict().items() if value is not None}
 
         if update_data:
-            updated_results = db.items.update_one({"_id":item_id_obj},{"$set": update_data})
+            updated_results = db.items.update_one({"_id": item_id_obj}, {"$set": update_data})
             # Fetch the updated document
             updated_obj = db.items.find_one({"_id": item_id_obj})
             results = serialize_document(updated_obj)
@@ -171,18 +173,19 @@ async def update(
     #     results.update({"body": body})
     return results
 
+
 @app.get('/users/')
 async def read_users():
-    results = db.users.find()
+    results = db.users.find().to_list(length=100)
     if results:
-        results = serialize_document(results)
+        results = serialize_documents(results)
     else:
-        results ={} # serialize_document(results)
+        results = {}  # serialize_document(results)
     return results
 
 
 @app.post('/offers/')
-async def create_offer(offers:list[Offer]):
+async def create_offer(offers: list[Offer]):
     # Convert Pydantic models to a list of dictionaries
     offers_dicts = [offer.dict() for offer in offers]
 
@@ -199,12 +202,31 @@ async def create_offer(offers:list[Offer]):
 
 
 @app.post("/login/")
-async def login(username: Annotated[str,Form()], password: Annotated[str,Form()]):
+async def login(username: Annotated[str, Form()], password: Annotated[str, Form()]):
     return {"username": username, "password": password}
 
 
 @app.post("/form/login/")
-async def login_form(form: Annotated[UserForm,Form()],):
-    return form
+async def login_form(form: Annotated[UserForm, Form()], ):
+    form = form.dict()
+    username = form['username']
+    password = form['password']
+    user = db.users.find_one({"username": username})
+    response = serialize_document(user)
+    return response
+
+@app.post("/uploadfiles/")
+async def upload_files(file: UploadFile):
+    MEDIA_FOLDER = "media"
+    # Filepath where the file will be saved
+    file_path = os.path.join(MEDIA_FOLDER, file.filename)
+
+    # Save the file
+    with open(file_path, "wb") as buffer:
+        content = await file.read()  # Read the file content asynchronously
+        buffer.write(content)  # Write the content to the media folder
+
+    return {"filename": file.filename, "filepath": file_path}
+
 
 # /Users/m1user/PycharmProjects/fastapi/.venv/bin/python -m uvicorn main:app --reload
