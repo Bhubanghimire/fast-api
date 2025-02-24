@@ -4,8 +4,9 @@ from typing import Literal
 
 class User(BaseModel):
     username: str
-    first_name: str
-    last_name: str | None = None
+    email: str | None = None
+    full_name: str
+    disabled: bool | None = None
 
 
 class Item(BaseModel):
@@ -43,27 +44,49 @@ class Offer(BaseModel):
     model_config = {
         "json_schema_extra": {
             "examples": [
-                  {
+                {
                     "name": "dashain offer",
                     "description": "5% discount on any items",
                     "price": 0,
                     "items": [
-                      {
-                        "name": "test",
-                        "description": "ok",
-                        "price": 1,
-                        "tax": 0,
-                        "tags": [
-                          "string"
-                        ],
-                        "added_by": {
-                          "username": "bhuban",
-                          "first_name": "bhuban",
-                          "last_name": "ghimire"
+                        {
+                            "name": "test",
+                            "description": "ok",
+                            "price": 1,
+                            "tax": 0,
+                            "tags": [
+                                "string"
+                            ],
+                            "added_by": {
+                                "username": "bhuban",
+                                "first_name": "bhuban",
+                                "last_name": "ghimire"
+                            }
                         }
-                      }
                     ]
-                  }
-                ]
+                }
+            ]
         }
     }
+
+
+fake_users_db = {
+    "johndoe": {
+        "username": "johndoe",
+        "full_name": "John Doe",
+        "email": "johndoe@example.com",
+        "hashed_password": "fakehashedsecret",
+        "disabled": False,
+    },
+    "alice": {
+        "username": "alice",
+        "full_name": "Alice Wonderson",
+        "email": "alice@example.com",
+        "hashed_password": "fakehashedsecret2",
+        "disabled": True,
+    },
+}
+
+
+class UserInDB(User):
+    hashed_password: str

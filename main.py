@@ -1,14 +1,14 @@
 from bson import ObjectId
-from fastapi import FastAPI, Query, Path, Body, HTTPException, Form, UploadFile
+from fastapi import FastAPI, Query, Path, Body, HTTPException, Form, UploadFile, Depends
 
 from form import UserForm
-from models import Item, FilterParams, User, Offer
+from models import Item, FilterParams, User, Offer, UserInDB, fake_users_db
 from enum import Enum
 from typing import Annotated
 from dotenv import load_dotenv
 from pymongo import MongoClient
 import os
-
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from serializers import serialize_document, serialize_documents
 
 # Load environment variables
@@ -28,6 +28,8 @@ class ModelName(str, Enum):
 
 app = FastAPI()
 
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
 
 @app.get('/', responses={
     200: {"description": "Request was successful",
@@ -35,7 +37,7 @@ app = FastAPI()
     400: {"description": "Bad Request",
           "content": {"application/json": {"example": {"message": "There was an error with the request"}}}},
 })
-async def root(some_condition: bool):
+async def root(some_condition: bool = True):
     if some_condition:
         return {"message": "Request was successful"}
     else:
@@ -91,7 +93,8 @@ fake_item_db = [
 
 
 @app.get('/items/')
-async def read_item(skip: int = 0, limit: int = 10, q: str | None = None, short: bool = False):
+async def read_item(skip: int = 0, limit: int = 10, q: str | None = None, short: bool = False,
+                    token: str = Depends(oauth2_scheme)):
     # fake_item_db = db.items.find()
     query = {}
     if q:
@@ -201,9 +204,22 @@ async def create_offer(offers: list[Offer]):
     return response
 
 
-@app.post("/login/")
+def fake_hash_password(password: str):
+    return "fakehashed" + password
+
+
+@app.post("/token")
 async def login(username: Annotated[str, Form()], password: Annotated[str, Form()]):
-    return {"username": username, "password": password}
+    user_dict = fake_users_db.get(username)
+    if not user_dict:
+        raise HTTPException(status_code=404, detail="Username and password incorrect")
+    user = UserInDB(**user_dict)
+    hashed_password = fake_hash_password(password)
+    print(hashed_password, user.hashed_password)
+    if not hashed_password == user.hashed_password:
+        raise HTTPException(status_code=400, detail="Incorrect username or password")
+
+    return {"access_token": user.username, "token_type": "bearer"}
 
 
 @app.post("/form/login/")
@@ -212,8 +228,12 @@ async def login_form(form: Annotated[UserForm, Form()], ):
     username = form['username']
     password = form['password']
     user = db.users.find_one({"username": username})
-    response = serialize_document(user)
+    if user:
+        response = serialize_document(user)
+    else:
+        raise HTTPException(status_code=400, detail="User does not exist")
     return response
+
 
 @app.post("/uploadfiles/")
 async def upload_files(file: UploadFile):
@@ -228,5 +248,22 @@ async def upload_files(file: UploadFile):
 
     return {"filename": file.filename, "filepath": file_path}
 
+
+def fake_decode_token(token):
+    return User(
+        username=token + "fakedecoded", email="bhuban@gmail.com", full_name="Bhuban Ghimire"
+    )
+
+
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+    print("token", token)
+    user = fake_decode_token(token)
+    return user
+
+
+@app.get('/users/me')
+async def read_me(current_user: Annotated[User, Depends(get_current_user)]):
+    print("curret")
+    return current_user
 
 # /Users/m1user/PycharmProjects/fastapi/.venv/bin/python -m uvicorn main:app --reload
